@@ -1,0 +1,51 @@
+# Skickar en push-avisering till Jarvis-hubben när Upptime öppnar ("nere") eller stänger ("uppe igen")
+# ett statusärende. Pushen går direkt via Cloudflare (hubbens /hook/notify), så den fungerar
+# även när n8n-datorn är nere. Är hubben själv nere kommer larmet ändå som mejl från GitHub.
+# Repo-secret: HUB_SECRET (samma som i jarvis-hub).
+name: Hubblarm
+
+on:
+  issues:
+    types: [opened, closed]
+  workflow_dispatch: # testknapp: skickar en provavisering
+
+permissions:
+  contents: read
+
+jobs:
+  push:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'status')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Skicka push till hubben
+        env:
+          HUB_SECRET: ${{ secrets.HUB_SECRET }}
+          ACTION: ${{ github.event.action || 'test' }}
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          [ -n "$HUB_SECRET" ] || { echo "HUB_SECRET saknas"; exit 1; }
+          namn=$(printf '%s' "$TITLE" | sed -E 's/^[^A-Za-z0-9]*//; s/ (is|has) .*$//')
+          if [ "$ACTION" = "test" ]; then
+            rubrik="Upptime: provlarm"
+            text="Larmet från status-sidan fungerar. Inget är nere."
+          elif [ "$ACTION" = "opened" ] && printf '%s' "$TITLE" | grep -q degraded; then
+            rubrik="⚠️ $namn är långsam"
+            text="$namn svarar men tar över 10 sekunder. Status: skarkyvideo.github.io/status"
+          elif [ "$ACTION" = "opened" ]; then
+            rubrik="🛑 $namn är nere"
+            text="Upptime når inte $namn. Kollas igen var 5:e minut. Status: skarkyvideo.github.io/status"
+          else
+            rubrik="✅ $namn är uppe igen"
+            text="$namn svarar igen."
+          fi
+          body=$(jq -n --arg t "$rubrik" --arg b "$text" '{title:$t, body:$b, url:"/", tag:"upptime"}')
+          for i in 1 2 3; do
+            code=$(curl -sS -o svar.json -w '%{http_code}' -X POST https://jarvis-hub.pages.dev/hook/notify \
+              -H "x-hub-secret: $HUB_SECRET" -H "content-type: application/json" -d "$body") || code=000
+            cat svar.json 2>/dev/null; echo
+            [ "$code" = "200" ] && exit 0
+            sleep $((i * 20))
+          done
+          echo "Hubben svarade inte – larmet finns kvar som ärende och mejl från GitHub."
+          exit 1
