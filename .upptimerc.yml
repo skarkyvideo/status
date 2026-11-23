@@ -1,31 +1,34 @@
-# Change these first
-owner: upptime # Your GitHub organization or username, where this repository lives
-repo: upptime # The name of this repository
+# Upptime för Skarky Media: kollar tjänsterna utifrån var 5:e minut.
+# Går något ner öppnas ett ärende (issue) här, Elias får mejl från GitHub
+# och hubblarm.yml skickar en push-avisering via hubben.
+owner: skarkyvideo
+repo: status
 
 sites:
-  - name: Google
-    url: https://www.google.com
-  - name: Wikipedia
-    url: https://en.wikipedia.org
-  - name: Hacker News
-    url: https://news.ycombinator.com
-  - name: Secret Site
-    url: $SECRET_SITE
+  # /tjanst/ släpps förbi Cloudflare Access, så den här kollen når hubbens Pages på riktigt.
+  # (Startsidan ger alltid 302 till Access-inloggningen, även om Pages skulle vara nere.)
+  - name: Jarvis-hubben
+    url: https://jarvis-hub.pages.dev/tjanst/
+    maxResponseTime: 10000
+  # n8n via Cloudflare-tunneln till n8n-datorn
+  - name: n8n
+    url: https://n8n.skarkymedia.se/healthz
+    maxResponseTime: 10000
+  - name: skarkymedia.se
+    url: https://skarkymedia.se
+    maxResponseTime: 10000
+
+assignees:
+  - skarkyvideo
+
+# Inga hemligheter används i kollarna.
+secrets: []
 
 status-website:
-  # Add your custom domain name, or remove the `cname` line if you don't have a domain
-  # Uncomment the `baseUrl` line if you don't have a custom domain and add your repo name there
-  cname: demo.upptime.js.org
-  # baseUrl: /your-repo-name
-  logoUrl: https://raw.githubusercontent.com/upptime/upptime.js.org/master/static/img/icon.svg
-  name: Upptime
-  introTitle: "**Upptime** is the open-source uptime monitor and status page, powered entirely by GitHub."
-  introMessage: This is a sample status page which uses **real-time** data from our [GitHub repository](https://github.com/upptime/upptime). No server required — just GitHub Actions, Issues, and Pages. [**Get your own for free**](https://github.com/upptime/upptime)
+  baseUrl: /status
+  name: Skarky Media status
+  introTitle: "**Skarky Media** – driftstatus"
+  introMessage: Kollas automatiskt var 5:e minut.
   navbar:
     - title: Status
       href: /
-    - title: GitHub
-      href: https://github.com/$OWNER/$REPO
-
-# Upptime also supports notifications, assigning issues, and more
-# See https://upptime.js.org/docs/configuration
